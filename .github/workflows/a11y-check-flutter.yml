@@ -1,0 +1,76 @@
+# Dogfood workflow for the invoiceninja/admin-portal fork: scans the app with
+# a11y-check-flutter on every push and PR. Review-only — the committed
+# .a11y/flutter/baseline.json is the accepted floor, so the job fails only on a
+# NEW finding at or above the config's fail_at.
+#
+# Static lint only for now: the app pins Flutter 3.41.9 and does not compile on the
+# 3.47 that flutter_a11y_test (the runtime battery) needs, so `run-tests` is off and
+# test/a11y/screens_a11y_test.dart waits for the app to move. The lint resolves
+# against this repo's own `flutter pub get`, which works on either Flutter.
+#
+# One-time setup in the fork:
+#   1. Secret FLUTTER_A11Y_READ_TOKEN: a fine-grained PAT with Contents: Read-only
+#      on coryj627/flutter-a11y (private). It lets `pub get` fetch flutter_a11y_test
+#      and `dart pub global activate` fetch the CLI.
+#   2. Code scanning must be enabled on the fork for the SARIF upload step.
+#
+# This fork is public and coryj627/flutter-a11y is private: a public repository can
+# never `uses:` an action from a private one, so the action is checked out with the
+# read token and run as a local action.
+name: a11y-check-flutter
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  security-events: write # github/codeql-action/upload-sarif
+
+jobs:
+  a11y:
+    name: a11y-check-flutter
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          flutter-version: 3.47.9
+          cache: true
+
+      - name: Read access to coryj627/flutter-a11y (private)
+        env:
+          TOKEN: ${{ secrets.FLUTTER_A11Y_READ_TOKEN }}
+        run: |
+          git config --global url."https://x-access-token:${TOKEN}@github.com/".insteadOf "https://github.com/"
+
+      # Gitignored build-time config the app imports.
+      - name: Environment file
+        run: cp lib/.env.dart.example lib/.env.dart
+
+      - name: Fetch the a11y-check-flutter action
+        uses: actions/checkout@v4
+        with:
+          repository: coryj627/flutter-a11y
+          ref: main
+          token: ${{ secrets.FLUTTER_A11Y_READ_TOKEN }}
+          path: .flutter-a11y
+
+      - name: Scan (pub get → a11y_check_flutter scan, static only)
+        id: a11y
+        uses: ./.flutter-a11y
+        with:
+          ref: main
+          run-tests: "false"
+
+      - name: Upload SARIF to code scanning
+        if: always() && steps.a11y.outputs.sarif != ''
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: ${{ steps.a11y.outputs.sarif }}
+          category: a11y-check-flutter
