@@ -3,7 +3,7 @@
 This directory is not part of upstream admin-portal. It is a dogfood of
 [flutter-a11y](https://github.com/coryj627/flutter-a11y) (private): widget
 tests that start the real app over a fake server, sign in through the login
-form, walk to each screen, and record what `flutter_a11y_test` 0.4.1 finds on
+form, walk to each screen, and record what `flutter_a11y_test` 0.4.2 finds on
 the rendered semantics tree.
 
 **This is a VM widget-test run (`flutter test`), not a browser run.** Nothing
@@ -230,7 +230,13 @@ What the harness does:
   `reflow-pass-aborted` diagnostic), and the aborted passes are written to the
   log as `reflowPassesAborted`, one `<pass>: <error>` per pass, separated by
   `; ` (the pass is `width 320 px`, `text scale 2.0x` or `restoring after
-  text scale 2.0x`). This happened on 51 screens (see "Exceptions"). Any other
+  text scale 2.0x`). When the view cannot be restored after a pass, the
+  passes after it are not run; since 0.4.2 the engine names each of them in
+  `failures` too, with a `ReflowPassNotAttempted` error (`width 320 px:
+  ReflowPassNotAttempted: not attempted, because the view could not be
+  restored after text scale 2.0x`), and the log shows it as it stands: the
+  harness adds nothing of its own. At 0.4.1 such a pass was skipped without
+  being named. This happened on 51 screens (see "Exceptions"). Any other
   error from `auditScreen` keeps the fallback the harness had at 0.3.0 and
   0.4.0: the screen is audited again with `reflow: false`, and the error is
   logged under the same key without a pass name. In this run no screen took
@@ -311,8 +317,8 @@ finding: `text-overflow-at-scale` at
 |---|---|---|
 | 39 screens, 320 px pass aborted | desktop: every `*/view/tab-documents`, `edit/tab-settings` of the invoice-like forms, and 23 settings pages and tabs | `Trailing widget consumes the entire tile width (including ListTile.contentPadding)` when laid out at 320 px. A real reflow failure; 0.4.1 still runs the text-scale pass |
 | 1 screen, 320 px pass aborted | `desktop/client/view/tab-ledger` | `Leading widget consumes the entire tile width` at 320 px |
-| 5 screens, text-scale pass aborted | `desktop/expense/new`, `desktop/payment/new`, `desktop/recurring_expense/new`, `desktop/task/new`, `desktop/history-sidebar` | `ListTile background color or ink splashes may be invisible. The ListTile is wrapped in a ColoredBox...`, a Flutter 3.47 debug check |
-| 6 screens, text-scale pass aborted | the 5 `desktop/menu-expanded/*` and `phone/menu/drawer` | The company switcher's `DropdownButton` assertion described above |
+| 5 screens, text-scale pass aborted | `desktop/expense/new`, `desktop/payment/new`, `desktop/recurring_expense/new`, `desktop/task/new`, `desktop/history-sidebar` | `ListTile background color or ink splashes may be invisible. The ListTile is wrapped in a ColoredBox...`, a Flutter 3.47 debug check. Restoring the view afterwards fails on the same error, so the 320 px pass is not run; 0.4.2 names it (`ReflowPassNotAttempted`), 0.4.1 skipped it unnamed |
+| 6 screens, text-scale pass aborted | the 5 `desktop/menu-expanded/*` and `phone/menu/drawer` | The company switcher's `DropdownButton` assertion described above. Restoring fails the same way, so the 320 px pass is not run and, since 0.4.2, is named |
 | 3 screens, audited in full | `phone/client/list/filter-sheet`, `phone/client/list/sort-sheet`, `phone/client/list/multiselect` | The same `ListTile ... ColoredBox` debug check, reported at the normal layout |
 | 1 screen, audited in full | `phone/reports` | The company switcher's assertion, reported while the drawer audited just before it was closing |
 | 2 screens | `login/self-hosted-refused` | The refused login, which the app rethrows by design |
