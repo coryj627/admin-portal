@@ -3,7 +3,7 @@
 This directory is not part of upstream admin-portal. It is a dogfood of
 [flutter-a11y](https://github.com/coryj627/flutter-a11y) (private): widget
 tests that start the real app over a fake server, sign in through the login
-form, walk to each screen, and record what `flutter_a11y_test` 0.4.2 finds on
+form, walk to each screen, and record what `flutter_a11y_test` 0.5.0 finds on
 the rendered semantics tree.
 
 **This is a VM widget-test run (`flutter test`), not a browser run.** Nothing
@@ -46,7 +46,8 @@ Options, as environment variables:
   test font.
 
 Two consecutive runs on one machine produced byte-identical output files:
-13,406 findings on 482 audited screen ids (2 more ids were not reached).
+13,396 findings on 484 screen ids (482 audited, 2 not reached), at 308
+distinct rule/file/line locations.
 
 `flutter test test/a11y` also runs the older `test/a11y/screens_a11y_test.dart`
 one directory up. Its 13 tests fail (see "The older harness"), so that command
@@ -191,10 +192,21 @@ some required fields null.
   Material Design Icons font are loaded, and Roboto is also registered under
   the macOS system font names, because the web build sets `fontFamily:
   'Roboto'` and a VM run does not. **Known gap:** text whose style names no
-  font family still renders in the test font, as solid boxes one em wide. That
-  is the app bar title and the state-filter dropdowns in the app bar
-  (`appBarTheme.titleTextStyle` in `lib/main_app.dart` names no family). An
-  overflow or contrast finding on that text deserves a second look.
+  font family still renders in the test font, as solid boxes one em wide.
+  Roboto is also loaded under the names `FlutterTest` and `Ahem`, but that
+  does not reach such text: `flutter test` draws a style with no family in
+  its built-in test font whatever is loaded at run time. That is the app bar
+  title and the state-filter dropdowns in the app bar
+  (`appBarTheme.titleTextStyle` in `lib/main_app.dart` names no family).
+  Since 0.5.0 the engine measures this per text: 412 of the 482 audited
+  screens carry the `partial-test-font` diagnostic (families `<none>`,
+  usually one text a screen, for example "Active" or "Company Details"), and
+  an overflow finding that text can take part in is needs-review: 174
+  `content-overflow-at-reflow-width` findings at the app bar title rows
+  (`lib/ui/app/edit_scaffold.dart:163`, `lib/ui/app/list_filter.dart:125`,
+  `lib/ui/app/list_scaffold.dart:154`). Overflow findings that only Roboto
+  text reaches stay definite. A contrast finding on that text also deserves
+  a second look.
 - **Shadows.** `debugDisableShadows` is turned off while a screen is pumped;
   `flutter_test` otherwise paints every shadow as a solid black outline around
   each card and dialog.
@@ -244,12 +256,13 @@ What the harness does:
 
 Consequences for labelling: `desktop/` screens have about 150 px more content
 width than a user with the default menu sees, and the icon rail's findings
-(`lib/ui/app/menu_drawer.dart:962`) repeat on every desktop screen: 3,700 of
-the 13,406 findings are that one line.
+(`lib/ui/app/menu_drawer.dart:962`) repeat on every desktop screen: 3,706 of
+the 13,396 findings are that one line.
 
 ## Screens audited
 
-482 screen ids audited, 237 on desktop and 245 on the phone. The full list
+484 screen ids: 482 audited, 237 on desktop and 245 on the phone, and 2 not
+reached (see "Not audited"). The full list
 with sizes is `.a11y/flutter/runtime-screens.json`. `<m>` below is each of
 `client`, `invoice`, `recurring_invoice`, `quote`, `credit`, `payment`,
 `product`, `project`, `task`, `vendor`, `purchase_order`, `expense`,
@@ -311,7 +324,10 @@ reflow pass was aborted (at 0.3.0 and 0.4.0 both passes were dropped on those
 51; at 0.4.1 the pass that did not raise the error runs, which added one
 finding: `text-overflow-at-scale` at
 `lib/ui/app/autobill_dropdown_menu_item.dart:14` on
-`desktop/settings/payment-settings`).
+`desktop/settings/payment-settings`. Since 0.5.0 that finding, and the 9 other
+overflow findings at that line, are gone: they were in the auto-bill
+dropdown's menu items that the closed `DropdownButton` keeps unpainted in its
+`IndexedStack`, which the reflow passes no longer measure).
 
 | Count | Where | What |
 |---|---|---|

@@ -160,8 +160,11 @@ const String kScreensLogPath = '.a11y/flutter/runtime-screens.json';
 ///
 /// The web build sets `fontFamily: 'Roboto'` on its theme.  A VM test is not
 /// a web build, so the theme falls back to the platform family; Roboto is
-/// registered under those names as well, and every text renders in Roboto
-/// as it does in the browser.
+/// registered under those names as well, and every text whose style names a
+/// family renders in Roboto as it does in the browser.  Text whose style names
+/// no family does not: `flutter test` draws it in its built-in test font
+/// whatever is loaded here, and flutter_a11y_test reports it per screen as
+/// `partial-test-font` (see README, "Real fonts").
 ///
 /// Set `A11Y_TEST_FONT=ahem` to skip this and compare with the default font.
 Future<void> loadRealFonts() async {
@@ -200,10 +203,10 @@ Future<void> loadRealFonts() async {
     '.SF UI Display',
     '.SF Pro Text',
     '.SF Pro Display',
-    // The family the test engine uses for a TextStyle with no fontFamily
-    // (the app bar title: `appBarTheme.titleTextStyle` names none).  In the
-    // app such text falls back to the platform's default font; here it
-    // would be drawn as solid boxes.
+    // The test font's own names, for a style that names them.  This does
+    // not reach a TextStyle with no fontFamily (the app bar title:
+    // `appBarTheme.titleTextStyle` names none): the test engine draws that
+    // in its built-in font whatever is loaded, as solid boxes.
     'FlutterTest',
     'Ahem',
   ]) {
@@ -738,9 +741,9 @@ class App {
     await maybeScreenshot(tester, screenId);
 
     // When a screen reports an error other than an overflow while it is
-    // re-laid out at 200 % text or at 320 px, flutter_a11y_test 0.4.1 aborts
-    // that pass only, runs the others, records the result to the sink and
-    // throws A11yReflowException.  Its result is the screen's result, and the
+    // re-laid out at 200 % text or at 320 px, flutter_a11y_test (since
+    // 0.4.1) aborts that pass only, runs the others, records the result to
+    // the sink and throws A11yReflowException.  Its result is the screen's result, and the
     // aborted passes go to the log.  Any other error keeps the old fallback:
     // the screen is audited again without the two reflow passes, and the
     // error is kept in the log.
