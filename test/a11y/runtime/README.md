@@ -3,7 +3,7 @@
 This directory is not part of upstream admin-portal. It is a dogfood of
 [flutter-a11y](https://github.com/coryj627/flutter-a11y) (private): widget
 tests that start the real app over a fake server, sign in through the login
-form, walk to each screen, and record what `flutter_a11y_test` 0.5.0 finds on
+form, walk to each screen, and record what `flutter_a11y_test` 0.5.1 finds on
 the rendered semantics tree.
 
 **This is a VM widget-test run (`flutter test`), not a browser run.** Nothing
@@ -46,8 +46,11 @@ Options, as environment variables:
   test font.
 
 Two consecutive runs on one machine produced byte-identical output files:
-13,396 findings on 484 screen ids (482 audited, 2 not reached), at 308
-distinct rule/file/line locations.
+16,205 findings on 484 screen ids (482 audited, 2 not reached), at 244
+distinct rule/file/line locations. 15 screens carry the `unsettled`
+diagnostic (0.5.1): something on them still animated when the audit's settle
+limit ran out (the `*/view/tab-history`, `*/edit/tab-pdf` and
+`*/view/tab-locations` tabs among others), and they are audited as they stand.
 
 `flutter test test/a11y` also runs the older `test/a11y/screens_a11y_test.dart`
 one directory up. Its 13 tests fail (see "The older harness"), so that command
@@ -198,10 +201,11 @@ some required fields null.
   its built-in test font whatever is loaded at run time. That is the app bar
   title and the state-filter dropdowns in the app bar
   (`appBarTheme.titleTextStyle` in `lib/main_app.dart` names no family).
-  Since 0.5.0 the engine measures this per text: 412 of the 482 audited
+  Since 0.5.0 the engine measures this per text: 401 of the 482 audited
   screens carry the `partial-test-font` diagnostic (families `<none>`,
-  usually one text a screen, for example "Active" or "Company Details"), and
-  an overflow finding that text can take part in is needs-review: 174
+  usually one text a screen, for example "Active" or "Company Details"; 412
+  at 0.5.0, before 0.5.1 stopped measuring the page under a menu or dialog),
+  and an overflow finding that text can take part in is needs-review: 168
   `content-overflow-at-reflow-width` findings at the app bar title rows
   (`lib/ui/app/edit_scaffold.dart:163`, `lib/ui/app/list_filter.dart:125`,
   `lib/ui/app/list_scaffold.dart:154`). Overflow findings that only Roboto
@@ -257,7 +261,11 @@ What the harness does:
 Consequences for labelling: `desktop/` screens have about 150 px more content
 width than a user with the default menu sees, and the icon rail's findings
 (`lib/ui/app/menu_drawer.dart:962`) repeat on every desktop screen: 3,706 of
-the 13,396 findings are that one line.
+the 16,205 findings are that one line. Since 0.5.1 a tap merged into a table
+cell or a sortable column header is an `interactive-missing-role` finding:
+3,216 at `lib/ui/app/tables/app_paginated_data_table.dart:569` (the list
+tables' `DataTable`: 2,728 tappable cells, 488 headers) and 28 at four lines
+of `lib/ui/reports/reports_screen.dart` (21 cells, 7 headers).
 
 ## Screens audited
 
