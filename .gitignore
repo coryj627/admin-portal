@@ -90,3 +90,6 @@ android/app/release/
 *.keystore
 *.pem
 *.p12
+# Runtime a11y audit: per-screen log (test/a11y/runtime), rewritten on every run.
+.a11y/flutter/runtime-screens.json
+.a11y/flutter/runtime-screens.json.lock

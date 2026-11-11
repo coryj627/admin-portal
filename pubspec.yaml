@@ -104,15 +104,14 @@ dependencies:
   
 dependency_overrides:
   intl: any
+  material_design_icons_flutter:
+    path: .flutter_3_47_compat/material_design_icons_flutter
   navigation_builder: ^0.0.3
   states_rebuilder: ^6.3.0
   win32: ^5.5.1
   image: ^4.5.4
   super_editor:
-    git:
-      url: https://github.com/superlistapp/super_editor
-      path: super_editor
-      ref: 9655c7f987968d680f83fc095a604f86d9ad15a1
+    path: .flutter_3_47_compat/super_editor
   super_editor_markdown:
     git:
       url: https://github.com/superlistapp/super_editor

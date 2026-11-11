@@ -966,10 +966,9 @@ packages:
   material_design_icons_flutter:
     dependency: "direct main"
     description:
-      name: material_design_icons_flutter
-      sha256: "6f986b7a51f3ad4c00e33c5c84e8de1bdd140489bbcdc8b66fc1283dad4dea5a"
-      url: "https://pub.dev"
-    source: hosted
+      path: ".flutter_3_47_compat/material_design_icons_flutter"
+      relative: true
+    source: path
     version: "7.0.7296"
   memoize:
     dependency: "direct main"
@@ -1621,11 +1620,9 @@ packages:
   super_editor:
     dependency: "direct main"
     description:
-      path: super_editor
-      ref: "9655c7f987968d680f83fc095a604f86d9ad15a1"
-      resolved-ref: "9655c7f987968d680f83fc095a604f86d9ad15a1"
-      url: "https://github.com/superlistapp/super_editor"
-    source: git
+      path: ".flutter_3_47_compat/super_editor"
+      relative: true
+    source: path
     version: "0.3.0-dev.39"
   super_editor_markdown:
     dependency: "direct main"
