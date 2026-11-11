@@ -3,7 +3,7 @@
 This directory is not part of upstream admin-portal. It is a dogfood of
 [flutter-a11y](https://github.com/coryj627/flutter-a11y) (private): widget
 tests that start the real app over a fake server, sign in through the login
-form, walk to each screen, and record what `flutter_a11y_test` 0.4.0 finds on
+form, walk to each screen, and record what `flutter_a11y_test` 0.4.1 finds on
 the rendered semantics tree.
 
 **This is a VM widget-test run (`flutter test`), not a browser run.** Nothing
@@ -30,8 +30,8 @@ Outputs, both git-ignored and rewritten on every run:
 - `.a11y/flutter/runtime-screens.json`: one entry per screen id with its
   viewport, the view size it was audited at, how far its lists could still
   scroll, the app route, the finding count per rule, audit diagnostics, the
-  exceptions caught while the screen was pumped, whether the reflow passes had
-  to be dropped and why, and the requests the app made to the fake server.
+  exceptions caught while the screen was pumped, which reflow passes were
+  aborted and why, and the requests the app made to the fake server.
   Two more keys list the plugin calls that were answered with `null` and the
   exceptions reported while an app was being closed.
 
@@ -46,7 +46,7 @@ Options, as environment variables:
   test font.
 
 Two consecutive runs on one machine produced byte-identical output files:
-13,405 findings on 482 audited screen ids (2 more ids were not reached).
+13,406 findings on 482 audited screen ids (2 more ids were not reached).
 
 `flutter test test/a11y` also runs the older `test/a11y/screens_a11y_test.dart`
 one directory up. Its 13 tests fail (see "The older harness"), so that command
@@ -209,11 +209,13 @@ some required fields null.
 
 ### The side menu on the desktop viewport
 
-`flutter_a11y_test` (0.3.0 and 0.4.0 alike) rethrows any error other than an overflow that a
-screen reports while it is re-laid out at 200 % text or at 320 px, and then
-records nothing for that screen. With the side menu expanded, the company
-switcher reports its assertion on every rebuild, so every desktop screen
-would lose its whole audit.
+`flutter_a11y_test` 0.3.0 and 0.4.0 rethrew any error other than an overflow
+that a screen reported while it was re-laid out at 200 % text or at 320 px,
+and then recorded nothing for that screen. 0.4.1 aborts only the pass that
+raised it, runs the others, records the screen's findings and throws
+`A11yReflowException`. With the side menu expanded, the company switcher
+reports its assertion on every rebuild, so every desktop screen would lose its
+text-scale pass.
 
 What the harness does:
 
@@ -221,15 +223,23 @@ What the harness does:
   rail (one tap on the chevron at its foot; a setting the app remembers). The
   collapsed menu has no dropdown, and the full battery runs.
 - Five screens are audited with the menu expanded, under
-  `desktop/menu-expanded/...`, without the two reflow passes.
-- Generally: when `auditScreen` throws, the screen is audited again with
-  `reflow: false` and the error is written to the log as
-  `reflowPassesAborted`. This happened on 51 screens (see "Exceptions").
+  `desktop/menu-expanded/...`; their text-scale pass aborts on the
+  assertion.
+- Generally: when `auditScreen` throws `A11yReflowException`, the exception's
+  `result` is the screen's result (the completed passes' findings, and a
+  `reflow-pass-aborted` diagnostic), and the aborted passes are written to the
+  log as `reflowPassesAborted`, one `<pass>: <error>` per pass, separated by
+  `; ` (the pass is `width 320 px`, `text scale 2.0x` or `restoring after
+  text scale 2.0x`). This happened on 51 screens (see "Exceptions"). Any other
+  error from `auditScreen` keeps the fallback the harness had at 0.3.0 and
+  0.4.0: the screen is audited again with `reflow: false`, and the error is
+  logged under the same key without a pass name. In this run no screen took
+  that fallback.
 
 Consequences for labelling: `desktop/` screens have about 150 px more content
 width than a user with the default menu sees, and the icon rail's findings
 (`lib/ui/app/menu_drawer.dart:962`) repeat on every desktop screen: 3,700 of
-the 13,405 findings are that one line.
+the 13,406 findings are that one line.
 
 ## Screens audited
 
@@ -290,15 +300,19 @@ Not attempted:
 ## Exceptions
 
 Nothing fails a test; what the framework or the app reports is recorded on the
-screen it happened on. 17 audited screens carry exceptions, and on 51 the
-reflow passes were dropped.
+screen it happened on. 17 audited screens carry exceptions, and on 51 one
+reflow pass was aborted (at 0.3.0 and 0.4.0 both passes were dropped on those
+51; at 0.4.1 the pass that did not raise the error runs, which added one
+finding: `text-overflow-at-scale` at
+`lib/ui/app/autobill_dropdown_menu_item.dart:14` on
+`desktop/settings/payment-settings`).
 
 | Count | Where | What |
 |---|---|---|
-| 39 screens, reflow dropped | desktop: every `*/view/tab-documents`, and `edit/tab-settings` of the invoice-like forms | `Trailing widget consumes the entire tile width (including ListTile.contentPadding)` when laid out at 320 px. A real reflow failure, but 0.3.0 discards the screen for it |
-| 1 screen, reflow dropped | `desktop/client/view/tab-ledger` | `Leading widget consumes the entire tile width` at 320 px |
-| 5 screens, reflow dropped | `desktop/expense/new`, `desktop/payment/new`, `desktop/recurring_expense/new`, `desktop/task/new`, `desktop/history-sidebar` | `ListTile background color or ink splashes may be invisible. The ListTile is wrapped in a ColoredBox...`, a Flutter 3.47 debug check |
-| 6 screens, reflow dropped | the 5 `desktop/menu-expanded/*` and `phone/menu/drawer` | The company switcher's `DropdownButton` assertion described above |
+| 39 screens, 320 px pass aborted | desktop: every `*/view/tab-documents`, `edit/tab-settings` of the invoice-like forms, and 23 settings pages and tabs | `Trailing widget consumes the entire tile width (including ListTile.contentPadding)` when laid out at 320 px. A real reflow failure; 0.4.1 still runs the text-scale pass |
+| 1 screen, 320 px pass aborted | `desktop/client/view/tab-ledger` | `Leading widget consumes the entire tile width` at 320 px |
+| 5 screens, text-scale pass aborted | `desktop/expense/new`, `desktop/payment/new`, `desktop/recurring_expense/new`, `desktop/task/new`, `desktop/history-sidebar` | `ListTile background color or ink splashes may be invisible. The ListTile is wrapped in a ColoredBox...`, a Flutter 3.47 debug check |
+| 6 screens, text-scale pass aborted | the 5 `desktop/menu-expanded/*` and `phone/menu/drawer` | The company switcher's `DropdownButton` assertion described above |
 | 3 screens, audited in full | `phone/client/list/filter-sheet`, `phone/client/list/sort-sheet`, `phone/client/list/multiselect` | The same `ListTile ... ColoredBox` debug check, reported at the normal layout |
 | 1 screen, audited in full | `phone/reports` | The company switcher's assertion, reported while the drawer audited just before it was closing |
 | 2 screens | `login/self-hosted-refused` | The refused login, which the app rethrows by design |

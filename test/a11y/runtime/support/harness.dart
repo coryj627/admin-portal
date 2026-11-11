@@ -737,10 +737,13 @@ class App {
     final remaining = remainingScrollPx(tester);
     await maybeScreenshot(tester, screenId);
 
-    // flutter_a11y_test 0.3.0 rethrows any error other than an overflow that
-    // a screen reports while it is re-laid out at 200 % text or at 320 px,
-    // and records nothing for the screen.  Such a screen is audited again
-    // without the two reflow passes, and the error is kept in the log.
+    // When a screen reports an error other than an overflow while it is
+    // re-laid out at 200 % text or at 320 px, flutter_a11y_test 0.4.1 aborts
+    // that pass only, runs the others, records the result to the sink and
+    // throws A11yReflowException.  Its result is the screen's result, and the
+    // aborted passes go to the log.  Any other error keeps the old fallback:
+    // the screen is audited again without the two reflow passes, and the
+    // error is kept in the log.
     A11yAuditResult result;
     String? reflowAborted;
     try {
@@ -749,6 +752,14 @@ class App {
         screenId: screenId,
         config: viewport.auditConfig,
       );
+    } on A11yReflowException catch (exception) {
+      result = exception.result;
+      reflowAborted = [
+        for (final failure in exception.failures)
+          '${failure.pass}: ${describeException(failure.error)}',
+      ].join('; ');
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
     } on Object catch (error) {
       reflowAborted = describeException(error);
       await tester.pump();
