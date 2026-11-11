@@ -299,7 +299,8 @@ reflow passes were dropped.
 | 1 screen, reflow dropped | `desktop/client/view/tab-ledger` | `Leading widget consumes the entire tile width` at 320 px |
 | 5 screens, reflow dropped | `desktop/expense/new`, `desktop/payment/new`, `desktop/recurring_expense/new`, `desktop/task/new`, `desktop/history-sidebar` | `ListTile background color or ink splashes may be invisible. The ListTile is wrapped in a ColoredBox...`, a Flutter 3.47 debug check |
 | 6 screens, reflow dropped | the 5 `desktop/menu-expanded/*` and `phone/menu/drawer` | The company switcher's `DropdownButton` assertion described above |
-| 4 screens, audited in full | `phone/client/list/filter-sheet`, `phone/client/list/sort-sheet`, `phone/client/list/multiselect`, `phone/reports` | The same `ListTile ... ColoredBox` debug check, reported at the normal layout |
+| 3 screens, audited in full | `phone/client/list/filter-sheet`, `phone/client/list/sort-sheet`, `phone/client/list/multiselect` | The same `ListTile ... ColoredBox` debug check, reported at the normal layout |
+| 1 screen, audited in full | `phone/reports` | The company switcher's assertion, reported while the drawer audited just before it was closing |
 | 2 screens | `login/self-hosted-refused` | The refused login, which the app rethrows by design |
 
 The app's own code also threw on data that was merely incomplete while the
