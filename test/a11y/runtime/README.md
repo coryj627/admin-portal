@@ -3,7 +3,7 @@
 This directory is not part of upstream admin-portal. It is a dogfood of
 [flutter-a11y](https://github.com/coryj627/flutter-a11y) (private): widget
 tests that start the real app over a fake server, sign in through the login
-form, walk to each screen, and record what `flutter_a11y_test` 0.3.0 finds on
+form, walk to each screen, and record what `flutter_a11y_test` 0.4.0 finds on
 the rendered semantics tree.
 
 **This is a VM widget-test run (`flutter test`), not a browser run.** Nothing
@@ -209,7 +209,7 @@ some required fields null.
 
 ### The side menu on the desktop viewport
 
-`flutter_a11y_test` 0.3.0 rethrows any error other than an overflow that a
+`flutter_a11y_test` (0.3.0 and 0.4.0 alike) rethrows any error other than an overflow that a
 screen reports while it is re-laid out at 200 % text or at 320 px, and then
 records nothing for that screen. With the side menu expanded, the company
 switcher reports its assertion on every rebuild, so every desktop screen
